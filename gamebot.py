@@ -3,6 +3,7 @@ import cv2
 from collections import deque
 import random
 
+
 class Flappybird:
 
     def __init__(self, model, train):
@@ -14,9 +15,9 @@ class Flappybird:
         self.deque = deque(maxlen=20000)
         self.INITIAL_EPSILON = 0.1
         self.FINAL_EPSILON = 0.0001
-        self.EXPLORE = 3000000.
+        self.EXPLORE = 100000.
         self.GAMMA = 0.99
-        
+
         self.batch_size = 32
         self.train_index = 0
 
@@ -31,8 +32,8 @@ class Flappybird:
     @staticmethod
     def image_preprocessing(im):
         im = cv2.cvtColor(im, cv2.COLOR_RGB2GRAY)
-        im = np.transpose(im, (1,0))
-        im = cv2.resize(im, (64,64))
+        im = np.transpose(im, (1, 0))
+        im = cv2.resize(im, (64, 64))
         im = im * 1./255.
 
         return im
@@ -47,7 +48,8 @@ class Flappybird:
         action[index] = 1.
 
         if self.epsilon > self.FINAL_EPSILON:
-            self.epsilon -= (self.INITIAL_EPSILON - self.FINAL_EPSILON) / self.EXPLORE
+            self.epsilon -= (self.INITIAL_EPSILON -
+                             self.FINAL_EPSILON) / self.EXPLORE
 
         return action, index
 
@@ -64,13 +66,16 @@ class Flappybird:
 
         state, next_state = np.concatenate(state), np.concatenate(next_state)
 
-        targets, Q = self.model.predict(state), self.model.predict(next_state)
+        predicted = self.model.predict(np.concatenate([state, next_state]))
 
-        targets[range(self.batch_size), action_index] = reward + self.GAMMA*np.max(Q, axis=1)*np.invert(terminal)
+        targets, Q = predicted[:self.batch_size], predicted[self.batch_size:]
 
-        if self.train_index%1000==0:
+        targets[range(self.batch_size), action_index] = reward + \
+            self.GAMMA*np.max(Q, axis=1)*np.invert(terminal)
+
+        if self.train_index % 1000 == 0:
             self.model.save_weights('model/weights.h5')
 
-        self.train_index+=1
+        self.train_index += 1
 
         return self.train_index, self.model.train_on_batch(state, targets)
