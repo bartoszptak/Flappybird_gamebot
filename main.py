@@ -6,7 +6,7 @@ from model import get_model
 from gamebot import Flappybird as gamebot
 
 
-def main(train=False):
+def main(train=False, eval=False):
     game_state = game.GameState()
 
     bot = gamebot(get_model(), train)
@@ -17,6 +17,10 @@ def main(train=False):
     state = np.stack((next_state, next_state, next_state, next_state), axis=2)
     state = np.reshape(state, (1, *state.shape))
 
+    if eval:
+        results = []
+        local_count = 0
+        
     while True:
         action, action_index = bot.make_action(state)
 
@@ -28,7 +32,26 @@ def main(train=False):
 
         if train:
             bot.make_buffer(state, action_index, reward, next_state, terminal)
-            print('Epoch: {} - loss: {}'.format(*bot.make_train()))
+            train_index, loss = bot.make_train()
+            print('Epoch: {} - loss: {}'.format(train_index, loss))
+            if train_index == bot.EXPLORE:
+                return
+
+        if eval:
+            if reward==1:
+                local_count += 1
+
+            if reward==-1:
+                results.append(local_count)
+                print('{}: {} steps'.format(len(results), local_count))
+
+                if len(results) == 100:
+                    print('Min: {}'.format(np.min(results)))
+                    print('Mean: {}'.format(np.mean(results)))
+                    print('Max: {}'.format(np.max(results)))
+                    return
+
+                local_count=0
 
         state = next_state
 
@@ -37,5 +60,7 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument('-t', '--train', help='Make training',
                         required=False, action='store_true')
+    parser.add_argument('-e', '--eval', help='Make evaluation',
+                        required=False, action='store_true')
     args = vars(parser.parse_args())
-    main(args['train'])
+    main(args['train'], args['eval'])

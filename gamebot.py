@@ -3,6 +3,10 @@ import cv2
 from collections import deque
 import random
 
+import tensorflow as tf
+tf.random.set_random_seed(2137)
+np.random.seed(2137)
+random.seed(2137)
 
 class Flappybird:
 
@@ -12,13 +16,13 @@ class Flappybird:
         self.action_size = 2
 
         self.model = model
-        self.deque = deque(maxlen=20000)
+        self.deque = deque(maxlen=5000)
         self.INITIAL_EPSILON = 0.1
         self.FINAL_EPSILON = 0.0001
-        self.EXPLORE = 100000.
+        self.EXPLORE = 100000
         self.GAMMA = 0.99
 
-        self.batch_size = 32
+        self.batch_size = 16
         self.train_index = 0
 
         self.train = train
@@ -57,7 +61,7 @@ class Flappybird:
         self.deque.append((state, action_index, reward, next_state, terminal))
 
     def make_train(self):
-        if len(self.deque) < self.batch_size:
+        if len(self.deque) < self.batch_size*50:
             return 0, 'WAIT'
 
         minibatch = random.sample(self.deque, self.batch_size)

@@ -1,5 +1,5 @@
 import tensorflow as tf
-from tensorflow.keras.layers import Input, Conv2D, MaxPool2D, Dense, Flatten
+from tensorflow.keras.layers import Input, Conv2D, MaxPool2D, Dense, Flatten, CuDNNLSTM
 
 INPUT_SHAPE = (64, 64, 1)
 
